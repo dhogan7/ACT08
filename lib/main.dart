@@ -3,19 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart'; // Import the just_audio package
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: HalloweenGame(),
     );
   }
 }
 
 class HalloweenGame extends StatefulWidget {
+  const HalloweenGame({super.key});
+
   @override
   _HalloweenGameState createState() => _HalloweenGameState();
 }
@@ -32,11 +36,13 @@ class _HalloweenGameState extends State<HalloweenGame> {
     _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton Background Removed.png', isCorrect: true), // This is the correct item
     _SpookyCharacter(name: 'Dog', imagePath: 'assets/ScaryDog Background Removed.png', isCorrect: false),
   ];
-@override
-void initState() {
+
+  @override
+  void initState() {
     super.initState();
     _playBackgroundMusic(); // Play background music when the game starts
   }
+
   // Function to handle item selection and play sound effects
   void handleItemSelected(bool isCorrect) async {
     if (isCorrect) {
@@ -62,6 +68,7 @@ void initState() {
     _audioPlayer.dispose(); // Dispose of the audio player
     super.dispose();
   }
+
   // Function to play looping background music
   void _playBackgroundMusic() async {
     await _audioPlayer.setAsset('assets/bg.mp3');
@@ -78,27 +85,34 @@ void initState() {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    const imageWidth = 100.0;
+    const imageHeight = 100.0;
+
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text('Halloween Game'),
+        title: const Text('Halloween Game'),
+        backgroundColor: Colors.orange,
       ),
       body: Stack(
         children: [
           // Iterate through spooky characters and display them
           for (var character in _characters)
             AnimatedPositioned(
-              duration: Duration(seconds: 3),
-              left: Random().nextDouble() * MediaQuery.of(context).size.width,
-              top: Random().nextDouble() * MediaQuery.of(context).size.height,
+              duration: const Duration(seconds: 3),
+              left: Random().nextDouble() * (screenWidth - imageWidth),
+              top: Random().nextDouble() * (screenHeight - imageHeight),
               child: GestureDetector(
                 onTap: () => handleItemSelected(character.isCorrect),
                 child: AnimatedOpacity(
                   opacity: _isVisible ? 1.0 : 0.0,
-                  duration: Duration(seconds: 1),
+                  duration: const Duration(seconds: 1),
                   child: Image.asset(
                     character.imagePath,
-                    width: 100,
-                    height: 100,
+                    width: imageWidth,
+                    height: imageHeight,
                   ),
                 ),
               ),
@@ -107,16 +121,17 @@ void initState() {
           if (gameOver)
             Center(
               child: isWinner
-                  ? Text('Congratulations! You found the correct item!',
+                  ? const Text('Congratulations! You found the correct item!',
                       style: TextStyle(fontSize: 24, color: Colors.green))
-                  : Text('Spooky! You selected the wrong item!',
+                  : const Text('Spooky! You selected the wrong item!',
                       style: TextStyle(fontSize: 24, color: Colors.red)),
             ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: toggleVisibility,
-        child: Icon(Icons.play_arrow),
+        child: const Icon(Icons.play_arrow),
+        backgroundColor: Colors.orange,
       ),
     );
   }
