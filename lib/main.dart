@@ -1,39 +1,39 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart'; // Import the just_audio package
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       home: HalloweenGame(),
     );
   }
 }
 
 class HalloweenGame extends StatefulWidget {
-  const HalloweenGame({super.key});
-
   @override
   _HalloweenGameState createState() => _HalloweenGameState();
 }
 
 class _HalloweenGameState extends State<HalloweenGame> {
-  final AudioPlayer _audioPlayer = AudioPlayer(); // Audio player instance
-  bool _isVisible = true;
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Audio player for sound effects
+  final AudioPlayer _backgroundPlayer = AudioPlayer(); // Audio player for background music
+  Timer? _movementTimer; // Timer for moving characters
+  bool _isVisible = true; // Controls the visibility of characters
   bool gameOver = false;
   bool isWinner = false;
 
   // List of Halloween characters with their positions
+  List<Offset> _characterPositions = [];
   final List<_SpookyCharacter> _characters = [
     _SpookyCharacter(name: 'Ghost', imagePath: 'assets/SpookyGhost Background Removed.png', isCorrect: false),
-    _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton Background Removed.png', isCorrect: true), // This is the correct item
+    _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton Background Removed.png', isCorrect: true), // Correct item
     _SpookyCharacter(name: 'Dog', imagePath: 'assets/ScaryDog Background Removed.png', isCorrect: false),
   ];
 
@@ -41,42 +41,78 @@ class _HalloweenGameState extends State<HalloweenGame> {
   void initState() {
     super.initState();
     _playBackgroundMusic(); // Play background music when the game starts
+    _initializePositions(); // Initialize character positions
+    _startCharacterMovement(); // Start automatic character movement
+  }
+
+  // Initialize character positions to be next to each other
+  void _initializePositions() {
+    _characterPositions = [
+      const Offset(50, 300),
+      const Offset(160, 300),
+      const Offset(270, 300),
+    ];
+  }
+
+  // Start moving characters automatically
+  void _startCharacterMovement() {
+    _movementTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      _moveCharacters();
+    });
+  }
+
+  // Move characters to random positions
+  void _moveCharacters() {
+    setState(() {
+      _characterPositions = _characterPositions.map((pos) {
+        return Offset(
+          Random().nextDouble() * MediaQuery.of(context).size.width - 100,
+          Random().nextDouble() * MediaQuery.of(context).size.height - 200,
+        );
+      }).toList();
+    });
   }
 
   // Function to handle item selection and play sound effects
   void handleItemSelected(bool isCorrect) async {
     if (isCorrect) {
-      // Play success sound
-      await _audioPlayer.setAsset('assets/bg.mp3');
+      await _audioPlayer.setAsset('assets/success_sound.wav');
       _audioPlayer.play();
       setState(() {
         isWinner = true;
         gameOver = true;
       });
     } else {
-      // Play spooky sound
-      await _audioPlayer.setAsset('assets/bg.mp3');
+      await _audioPlayer.setAsset('assets/spooky_sound.wav');
       _audioPlayer.play();
       setState(() {
         gameOver = true;
       });
     }
+    _movementTimer?.cancel(); // Stop movement after game ends
+  }
+
+  // Function to play looping background music
+  Future<void> _playBackgroundMusic() async {
+    try {
+      await _backgroundPlayer.setAsset('assets/bg.mp3');
+      _backgroundPlayer.setLoopMode(LoopMode.one);
+      _backgroundPlayer.setVolume(1.0);
+      _backgroundPlayer.play();
+    } catch (e) {
+      print("Error playing background music: $e");
+    }
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose(); // Dispose of the audio player
+    _audioPlayer.dispose(); // Dispose audio players
+    _backgroundPlayer.dispose();
+    _movementTimer?.cancel(); // Cancel movement timer
     super.dispose();
   }
 
-  // Function to play looping background music
-  void _playBackgroundMusic() async {
-    await _audioPlayer.setAsset('assets/bg.mp3');
-    _audioPlayer.setLoopMode(LoopMode.one); // Loop the background music
-    _audioPlayer.play();
-  }
-
-  // Function to randomly toggle visibility
+  // Toggle character visibility
   void toggleVisibility() {
     setState(() {
       _isVisible = !_isVisible;
@@ -85,11 +121,6 @@ class _HalloweenGameState extends State<HalloweenGame> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    const imageWidth = 100.0;
-    const imageHeight = 100.0;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -98,26 +129,26 @@ class _HalloweenGameState extends State<HalloweenGame> {
       ),
       body: Stack(
         children: [
-          // Iterate through spooky characters and display them
-          for (var character in _characters)
+          // Display characters at their respective positions
+          for (int i = 0; i < _characters.length; i++)
             AnimatedPositioned(
-              duration: const Duration(seconds: 3),
-              left: Random().nextDouble() * (screenWidth - imageWidth),
-              top: Random().nextDouble() * (screenHeight - imageHeight),
+              duration: const Duration(seconds: 2),
+              left: _characterPositions[i].dx,
+              top: _characterPositions[i].dy,
               child: GestureDetector(
-                onTap: () => handleItemSelected(character.isCorrect),
+                onTap: () => handleItemSelected(_characters[i].isCorrect),
                 child: AnimatedOpacity(
                   opacity: _isVisible ? 1.0 : 0.0,
                   duration: const Duration(seconds: 1),
                   child: Image.asset(
-                    character.imagePath,
-                    width: imageWidth,
-                    height: imageHeight,
+                    _characters[i].imagePath,
+                    width: 100,
+                    height: 100,
                   ),
                 ),
               ),
             ),
-          // Show the game result
+          // Display result message
           if (gameOver)
             Center(
               child: isWinner
@@ -128,6 +159,7 @@ class _HalloweenGameState extends State<HalloweenGame> {
             ),
         ],
       ),
+      // Button to toggle visibility of characters
       floatingActionButton: FloatingActionButton(
         onPressed: toggleVisibility,
         child: const Icon(Icons.play_arrow),

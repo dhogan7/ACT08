@@ -66,6 +66,7 @@ flutter:
      - assets/ScaryDog Background Removed.png
      - assets/bg.mp3
      - assets/success_sound.wav
+     - assets/spooky_sound.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
